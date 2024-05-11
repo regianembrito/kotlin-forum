@@ -1,36 +1,39 @@
 package br.com.rmbrito.kotlinforum.service
 
 import br.com.rmbrito.kotlinforum.domain.Topic
-import br.com.rmbrito.kotlinforum.dto.TopicDto
+import br.com.rmbrito.kotlinforum.dto.request.TopicRequest
+import br.com.rmbrito.kotlinforum.dto.response.TopicResponse
+import br.com.rmbrito.kotlinforum.mapper.TopicRequestMapper
+import br.com.rmbrito.kotlinforum.mapper.TopicResponseMapper
 import org.springframework.stereotype.Service
+import java.util.stream.Collectors
 import kotlin.collections.ArrayList
 
 @Service
 class TopicService(
     private var topics: List<Topic> = ArrayList(),
-    private val courseService: CourseService,
-    private val userService: UserService
+
+    private val topicResponseMapper: TopicResponseMapper,
+    private val topicRequestMapper: TopicRequestMapper
 ) {
 
-    fun toList(): List<Topic> {
-        return topics
+    fun toList(): List<TopicResponse> {
+        return topics.stream().map { t ->
+            topicResponseMapper.map(t)
+        }.collect(Collectors.toList())
     }
 
-    fun getById(id: Long): Topic {
-        return topics.stream().filter { it ->
-            it.id == id
+    fun getById(id: Long): TopicResponse {
+        val topic = topics.stream().filter { t ->
+            t.id == id
         }.findFirst().get()
+
+        return topicResponseMapper.map(topic)
     }
 
-    fun createTopic(topicDto: TopicDto) {
-        topics = topics.plus(
-            Topic(
-                id = topics.size.toLong() + 1,
-                title = topicDto.title,
-                message = topicDto.message,
-                course = courseService.getById(topicDto.idCourse),
-                author = userService.getById(topicDto.idAuthor)
-            )
-        )
+    fun createTopic(topicRequest: TopicRequest) {
+        val topic = topicRequestMapper.map(topicRequest)
+        topic.id = topics.size.toLong() + 1
+        topics = topics.plus(topic)
     }
 }
